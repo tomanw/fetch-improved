@@ -1,3 +1,8 @@
+//* Title: Fetch-Improved
+//* Description: An improved version of my original fetch clone
+//* Author: @tomanw
+
+
 #include <bits/pthreadtypes.h>
 #include <complex.h>
 #include <stdio.h>
@@ -20,7 +25,7 @@ int main() {
     char* OS = GetOS();
     char* FULL_NAME = GetName();
     printf("╭─ %s\n", OS);
-    printf("├─ %s\n", FULL_NAME);
+    printf("╰─ %s\n", FULL_NAME); 
     return 0;
 }
 
@@ -32,8 +37,29 @@ char* GetOS() {
 }
 
 char* GetName() {
-    return getenv("USER");
-}   
+    char hostname[1024];
+    char username[1024];
+    char *full_name = NULL;
+    //* get hostname
+    if (gethostname(hostname, sizeof(hostname)) < 0) {
+        perror("gethostname");
+        return NULL;
+    }
+    //* get username
+    if (getlogin_r(username, sizeof(username)) < 0) {
+        perror("getlogin_r");
+        return NULL;
+    }
+    //* allocate memory for full_name
+    full_name = malloc(sizeof(char) * (strlen(username) + strlen(hostname) + 2)); // +2 for '@' and null terminator
+    if (full_name == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+    //* combine them together with an @
+    snprintf(full_name, strlen(username) + strlen(hostname) + 2, "%s@%s", username, hostname);
+    return full_name;
+}  
 
 
 //! _     _ _                          
