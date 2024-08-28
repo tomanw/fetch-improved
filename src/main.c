@@ -5,27 +5,33 @@
 
 #include <bits/pthreadtypes.h>
 #include <complex.h>
+#include <linux/sysinfo.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <pwd.h>
-
+#include <sys/sysinfo.h>
 #define BUFFER_SIZE 1024
 #define KEYWORD_LIMIT 255
+#define us unsigned
 
 char* getenv(const char *name);
-char* GrepCMD(const char *fileName, const char *pattern);
 extern void free(void *);
 extern void *malloc(unsigned long);
+
+char* GrepCMD(const char *fileName, const char *pattern);
 char* RemoveQuotes(char* content, char* name);
 char* GetOS();
 char* GetName();
+char* GetUptime();
 
 int main() {
     char* OS = GetOS();
     char* FULL_NAME = GetName();
+    char* UPTIME = GetUptime();
     printf("╭─ %s\n", OS);
-    printf("╰─ %s\n", FULL_NAME); 
+    printf("├─ %s\n", FULL_NAME); 
+    printf("╰─󰄉 %s\n", UPTIME);
     return 0;
 }
 
@@ -39,6 +45,8 @@ char* GetOS() {
 char* GetName() {
     char hostname[1024];
     char username[1024];
+    char* uptime = malloc(BUFFER_SIZE);
+    
     char *full_name = NULL;
     //* get hostname
     if (gethostname(hostname, sizeof(hostname)) < 0) {
@@ -59,16 +67,40 @@ char* GetName() {
     //* combine them together with an @
     snprintf(full_name, strlen(username) + strlen(hostname) + 2, "%s@%s", username, hostname);
     return full_name;
-}  
+}
+// NOTE: for info about buffers check /notes/c-lang/buffers i **think**
+char* GetUptime() {
+   char* buffer = malloc(BUFFER_SIZE);
+    struct sysinfo info;
+    sysinfo(&info);
+    unsigned long UpTime       = info.uptime;
+    unsigned long SecPDay      = 86400;
+    unsigned long SecPHour     = 3600;
+    unsigned long SecPMinute   = 60;
+
+    unsigned long days         = UpTime / SecPDay;
+    unsigned long hours        = ( UpTime % SecPDay ) / SecPHour;
+    unsigned long minutes      = ( UpTime % SecPHour ) / SecPMinute;
+//   unsigned long seconds      = UpTime % SecPMinute;
+	
 
 
-//! _     _ _                          
-//!| |   (_) |__  _ __ __ _ _ __ _   _ 
-//!| |   | | '_ \| '__/ _` | '__| | | |
-//!| |___| | |_) | | | (_| | |  | |_| |
-//!|_____|_|_.__/|_|  \__,_|_|   \__, |
-//!                              |___/ 
+    // buffer parts
+    if ( buffer == NULL ) {
+	    perror("can't allocate memory");
+    }
 
+    snprintf(buffer, BUFFER_SIZE,
+		    "%lu day%s, %lu hour%s, %lu minute%s",
+		    days, (days == 1) ? "": "s",
+		    hours, (hours == 1) ? "": "s",
+		    minutes, (minutes == 1) ? "": "s");
+//		    seconds, (seconds == 1) ? "": "s");
+
+    return buffer;
+}
+
+//! Stupid Shit
 
 
 // removes quotes and name from the result of GrepCMD();
@@ -83,18 +115,18 @@ char* RemoveQuotes(char* content, char* name) {
 
 // returns the result of the "grep" command in bash
 char* GrepCMD(const char *fileName, const char *pattern) {
-    // Construct the command to be executed
+    // construct the command to be executed
     char command[BUFFER_SIZE];
     snprintf(command, sizeof(command), "grep '%s' %s", pattern, fileName);
 
-    // Open pipe
+    // open pipe
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
         perror("Failed to open pipe!");
         return NULL;
     }
 
-    // Allocate memory for the result
+    // allocate memory for the result
     char *result = malloc(BUFFER_SIZE);
     if (result == NULL) {
         perror("Failed to allocate memory");
@@ -102,13 +134,13 @@ char* GrepCMD(const char *fileName, const char *pattern) {
         return NULL;
     }
 
-    // Read grep output
+    // read grep output
     if (fgets(result, BUFFER_SIZE, fp) == NULL) {
         free(result);
         result = NULL;
     }
 
-    // Close the pipe
+    // close the pipe
     if (pclose(fp) == -1) {
         perror("Error closing pipe");
     }
