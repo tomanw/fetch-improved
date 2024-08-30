@@ -1,7 +1,7 @@
 # Makefile
 COMPILER = gcc
 COMPILER_FLAGS = -o
-SOURCE_FILES = src/main.c
+SOURCE_FILES = src/*
 TARGET = dist/fetch
 PREFIX = /usr/bin
 

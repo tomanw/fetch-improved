@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/sysinfo.h>
+#include "main.h"
 #define BUFFER_SIZE 1024
 #define KEYWORD_LIMIT 255
 #define us unsigned
@@ -19,29 +20,28 @@ char* getenv(const char *name);
 extern void free(void *);
 extern void *malloc(unsigned long);
 
-char* GrepCMD(const char *fileName, const char *pattern);
-char* RemoveQuotes(char* content, char* name);
-char* GetOS();
-char* GetName();
-char* GetUptime();
-
 int main() {
-    char* OS = GetOS();
-    char* FULL_NAME = GetName();
-    char* UPTIME = GetUptime();
-    printf("╭─ %s\n", OS);
-    printf("├─ %s\n", FULL_NAME); 
-    printf("╰─󰄉 %s\n", UPTIME);
-    return 0;
+   char* OS = GetOS();
+   char* FULL_NAME = GetName();
+   char* UPTIME = GetUptime();
+   char* SHELL = GetShell();
+
+   printf("╭─ %s\n", OS);
+   printf("├─ %s\n", SHELL);
+   printf("├─ %s\n", FULL_NAME); 
+   printf("╰─󰄉 %s\n", UPTIME);
+   return 0;
 }
 
 
+// DESCRIPTION: Gets the OS from 'PRETTY_NAME'
 char* GetOS() {
     char* OS = GrepCMD("/etc/os-release", "PRETTY_NAME");
     char* strippedOS = RemoveQuotes(OS, "PRETTY_NAME=");
     return strippedOS;
 }
 
+// DESCRIPTION: Gets the username + hostname in the format of 'username@hostname'
 char* GetName() {
     char hostname[1024];
     char username[1024];
@@ -68,7 +68,9 @@ char* GetName() {
     snprintf(full_name, strlen(username) + strlen(hostname) + 2, "%s@%s", username, hostname);
     return full_name;
 }
-// NOTE: for info about buffers check /notes/c-lang/buffers i **think**
+
+// NOTE: for info about buffers check /.notes/c-lang/buffers.txt
+// DESCRIPTION: Returns the uptime in the format of '[days] Day('s), [hours] Hour('s), [minutes] Minute('s)'
 char* GetUptime() {
    char* buffer = malloc(BUFFER_SIZE);
     struct sysinfo info;
@@ -100,10 +102,16 @@ char* GetUptime() {
     return buffer;
 }
 
+// DESCRIPTION: Returns the shell being used
+char* GetShell() {
+   return getenv("SHELL");
+}
+
+
 //! Stupid Shit
 
 
-// removes quotes and name from the result of GrepCMD();
+// DESCRIPTION: Removes quotes and name from the result of GrepCMD();
 char* RemoveQuotes(char* content, char* name) {
     char *strippedResult = content + strlen(name) + 1; // removes "PRETTY_NAME="
     char *endQuote = strchr(strippedResult, '"'); // gets the end quote
@@ -113,7 +121,7 @@ char* RemoveQuotes(char* content, char* name) {
     return strippedResult;
 }
 
-// returns the result of the "grep" command in bash
+// DESCRIPTION: Returns the result of the "grep" command in bash
 char* GrepCMD(const char *fileName, const char *pattern) {
     // construct the command to be executed
     char command[BUFFER_SIZE];
